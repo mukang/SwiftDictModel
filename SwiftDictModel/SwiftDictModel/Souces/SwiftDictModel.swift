@@ -8,10 +8,27 @@
 
 import Foundation
 
+/**
+字典转模型协议
+
+提示：
+* 自定义类映射字典中需要包含类的命名空间
+
+示例代码：
+return ["info": "\(Info.self)", "other": "\(Info.self)", "demo": "\(Info.self)"];
+
+* 目前存在的问题：
+
+- 由于 customClassMapping 是一个静态函数，子类模型中不能重写协议函数
+- 如果子类中也包含自定义对象，需要在父类的 customClassMapping 一并指定
+
+* 不希望参与字典转模型的属性可以定义为 private 的
+*/
+
 ///  字典转模型自定义协议
 @objc protocol DictModelProtocol {
     
-    ///  自定义类映射表
+    ///  自定义类映射
     ///
     ///  :returns: 可选关系映射字典 [属性名: 自定义对象名称]
     static func customeClassMapping() -> [String: String]?
@@ -38,13 +55,14 @@ class SwiftDictModel {
         let dictInfo = fullModelInfo(cls)
         
         // 实例化对象
-        var obj: AnyObject = cls.alloc()
+        let obj: AnyObject = cls.alloc()
         
         // 遍历模型信息字典，有什么属性就设置什么属性
         for (k, v) in dictInfo {
             
             // 取出传入字典中的内容
-            if let value: AnyObject? = dict[k] {
+            // MARK: - 需特别注意 if let value: AnyObject? = dict[k] 不能有问号
+            if let value: AnyObject = dict[k] {
                 
                 // 1.判断是否是自定义对象（不是自定义对象）
                 // 在json反序列化时，如果是null值，保存在字典中的结果是NSNull()
@@ -55,7 +73,7 @@ class SwiftDictModel {
                 } else { // 2.是自定义对象和value为NSNull()的系统类型
                     
                     // 确定value的类型
-                    let type = "\(value!.classForCoder)"
+                    let type = "\(value.classForCoder)"
                     
                     if type == "NSDictionary" { // 2.1如果类型是字典
                         
